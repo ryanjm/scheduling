@@ -74,13 +74,18 @@ class Schedule
   end
 
   # Converts @by_day to an nested array
-  # 'mo' => [[1,:mo]]
-  # 'mo,we,fr' => [[1,:mo],[1,:we],[1,:fr]]
+  # The first part is the offset (default = 1) and second is wday number
+  # 'mo' => [[1,1]]
+  # 'mo,we,fr' => [[1,1],[1,3],[1,5]]
   def translate_by_day
     days = @by_day.split(',')
     days.map do |day|
       if day.length == 2
-        [1,day.to_sym]
+        [ 1, DAYS.index(day.to_sym)]
+      elsif day.length == 3
+        [ day[0].to_i, DAYS.index(day[1..-1].to_sym) ]
+      else
+        [ day[0..-3].to_i, DAYS.index(day[-2..-1].to_sym) ]
       end
     end
   end
@@ -90,16 +95,15 @@ class Schedule
   def first_date(start_date)
     if @freq == :weekly
       wday = start_date.wday
-      days = translate_by_day
+      days = translate_by_day # i.e. [[1,1]] - 
       # we want the first occurance where wday <= given day
       # example: schedule is [:mo,:we,:fr]
       # if our start_date is Sunday (wday=0), we want to stop on Monday
       # if our start_date is Tuesday (wday=2), we want to stop on Wednesday
       # TODO: handle the case that start_date is Saturday and we need to go to the next week
-      day_index = days.index { |day| wday <= DAYS.index(day[1]) }
+      day_index = days.index { |day| wday <= day[1] }
       # day will be the wday of the first matching date
-      puts "day_index=#{day_index}"
-      day = DAYS.index(days[day_index][1])
+      day = days[day_index][1]
       # we want to return the start_date plus the number of days till the firt match
       start_date + (day - wday)
     end

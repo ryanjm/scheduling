@@ -137,7 +137,6 @@ describe Schedule do
       first_instance = Date.new(2013,3,11)
 
       s.first_date(start_date).should eq(first_instance)
-
     end
   end
 
@@ -145,7 +144,17 @@ describe Schedule do
     it "converts simple days" do
       s = Schedule.new
       s.by_day = 'mo'
-      s.translate_by_day.should eq([[1,:mo]])
+      s.translate_by_day.should eq([[1,1]])
+    end
+    it "converts simple days multiple days" do
+      s = Schedule.new
+      s.by_day = 'mo,we,fr'
+      s.translate_by_day.should eq([[1,1],[1,3],[1,5]])
+    end
+    it "converts complex days" do
+      s = Schedule.new
+      s.by_day = '1mo,-2we' # no an option, but handles two cases
+      s.translate_by_day.should eq([[1,1],[-2,3]])
     end
   end
 end
