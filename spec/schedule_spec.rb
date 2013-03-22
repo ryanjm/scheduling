@@ -121,7 +121,7 @@ describe Schedule do
       @s.next_date(start_date,start_date).should eq(first_instance)
     end
 
-    it "returns date if it is the starting date" do
+    it "returns date if it is a valid starting date" do
       # where to start the search (Monday)
       start_date = Date.new(2013,3,11)
       @s.next_date(start_date,start_date).should eq(start_date)
@@ -133,6 +133,17 @@ describe Schedule do
       next_date = Date.new(2013,3,25)
 
       @s.next_date(start_date,next_date).should eq(next_date)
+    end
+
+    it "returns next occurance even if it is over a week away" do
+      # Start of the month - first instance should be Monday the 4th
+      start_date = Date.new(2013,3,1)
+      # Start the search right after the first instance
+      after_date = Date.new(2013,3,5)
+      # Should get the next instance, 2 weeks after the 4th
+      expected = Date.new(2013,3,18)
+
+      @s.next_date(start_date, after_date).should eq(expected)
     end
 
   end

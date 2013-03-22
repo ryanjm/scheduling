@@ -24,28 +24,28 @@ class ScheduleItem
   def todos(beginning_date, ending_date, inspection_structure_id)
     # create an array to hold the todos
     new_todos = []
-
-    # TODO: loop through existing todos to see if there are any matches
-
-    # grab latest date (either todo or beginning_date)
     start = beginning_date
+
+    # loop through existing todos to see if there are any matches for timeframe
+    @schedule_todos.each do |todo|
+      if todo.start_date <= ending_date
+        new_todos << todo
+        start = todo.start_date + 1 if todo.start_date > start
+      end
+    end
 
     # while the start date is less than the ending_date
     while start <= ending_date do
       # grab the next occurance
-      next_date = @schedule.next_date(start,self.start_date)
+      next_date = @schedule.next_date(self.start_date,start)
 
-      puts "next_date = #{next_date}"
-      
       # only create an todo if it is before ending_date
       if (next_date <= ending_date)
-        
         todo = ScheduleTodo.new
         todo.inspection_structure_id = inspection_structure_id
         todo.schedule_item = self
         todo.start_date = next_date
         todo.end_date = next_date + @schedule.duration
-        
         # add it to the list to be returned
         new_todos << todo
         # add it to the hasMany list for future checking

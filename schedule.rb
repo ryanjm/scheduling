@@ -21,10 +21,12 @@ class Schedule
   attr_accessor :wkst # defines when the week starts (defaults to Monday)
   attr_accessor :duration # breaking from ics a little here (see above)
 
+  # set the defaults
   def initialize
     @interval = 1
     @wkst = :mo
     @id = rand(100)
+    @duration = 0 # 1 day
   end
 
   FREQ = [:daily, :weekly, :monthly]
@@ -38,6 +40,7 @@ class Schedule
     selected_days.compact.join(",")
   end
 
+  # Take params from a form and build the needed attributes
   def create(params)
     @name = params[:name] if params[:name]
 
@@ -52,6 +55,7 @@ class Schedule
     @duration = params[:duration].to_i if params[:duration]
   end
   
+  # Check to see if it is valid
   def valid?
     if @name.nil? || @freq.nil?
       false
@@ -93,10 +97,12 @@ class Schedule
 
   # Will return the _first_ time this event should happen
   # Does not take into account the interval
-  def first_date(start_date)
+  def first_date(start_date, continue=false)
+    puts "  first_date(#{start_date})"
     if @freq == :weekly
       wday = start_date.wday
       days = translate_by_day # i.e. [[1,1]] - 
+      puts "    wday(#{wday}) days(#{days})"
       # we want the first occurance where wday <= given day
       # example: schedule is [:mo,:we,:fr]
       # days = [[1,1],[1,3],[1,5]]
@@ -106,16 +112,19 @@ class Schedule
       # TODO: handle the case that start_date is Saturday and we need to go to the next week
       day_index = days.index { |day| wday <= day[1] }
       # if it is nil, we want the earliest day of the week
-      if day_index.nil?
+      if continue && day_index.nil?
         # I'd like to assume they are in order, but is that guaranteed?
         first_day = days.sort {|x,y| x[1] <=> y[1] }.first
         day_index = days.index(first_day)
         # We then need to bump up the start_date a week
         start_date+=7
+      elsif day_index.nil?
+        return nil
       end
       # day will be the wday of the first matching date
       day = days[day_index][1]
       # we want to return the start_date plus the number of days till the firt match
+      puts "    #{start_date} + (#{day} - #{wday}) = #{start_date + (day - wday)}"
       start_date + (day - wday)
     end
   end
@@ -123,10 +132,11 @@ class Schedule
   # Will return the next due date for the given schedule
   # Takes into account the frequency and then asks first_date for new date date
   def next_date(start_date,after_date)
+    puts "\nnext_date(#{start_date},#{after_date})"
     # TODO: needs to actually account for the day of the week it _should_ be on.
   
     # Frist time the event happened
-    first_occurrence =  first_date(start_date)
+    first_occurrence =  first_date(start_date,true)
     # Offset to add to the first_occurrence
     period = 0
 
@@ -139,14 +149,14 @@ class Schedule
 
     # diff = days between our `after_date` and the `first_occurrence`
     diff = after_date - first_occurrence
-    diff = 0 if diff < 0
+    # diff = 0 if diff < 0
     # ( diff / period ) - we want to find how many `period`s happened during that `diff`
-    # _.floor - we want to round down
+    # _.ceil - we want to round up so that we usually get at least one period
     # _ * period - multiply by that period to get the right offset
     # _ = days on or after which our next occurance is
-    days_after = ( diff / period ).floor * period
-    
-    first_date( first_occurrence + days_after )
+    days_after = ( diff / period ).ceil * period
+    puts "days_after = ( #{diff} / #{period} ).ceil * #{period} = #{days_after}"
+    first_date( first_occurrence + days_after, false)
   end
   # be able to grab the next x occurances after a given time
 end
