@@ -37,7 +37,9 @@ The goal is to make this a simple form for the user to fill out and then for the
 
 ### Creating a schedule_item
 
-A schedule item is simply a join table between a `Schedule` and an `InspectionStructure`. Since a schedule can be something like "Every other Monday", when the user adds this `schedule_item` we could give them the option of when this schedule should start. Alternatively we could move this `start_date` to the `Schedule` itself. I don't like doing that since the user might be preping a new site and their contract doesn't start for another two weeks. OR the fact that this gives them the flexability to allow "Every other Monday" to represent two different schedules. One that starts on a given week and the other that starts on the next week. Either way, if we do want to refactor that, it shouldn't be hard to do so.
+A schedule item is simply a join table between a `Schedule` and an `InspectionStructure`. Since a schedule can be something like "Every other Monday", when the user adds this `schedule_item` we could give them the option of when this schedule should start (vs starting when it is created). 
+
+> Alternatively we could move this `start_date` to the `Schedule` itself. I don't like doing that since the user might be preping a new site and their contract doesn't start for another two weeks. OR the fact that this gives them the flexability to allow "Every other Monday" to represent two "different" schedules. One that starts on a given week and the other that starts on the next week. Either way, if we do want to refactor that, it shouldn't be hard to do so.
 
 A `ScheduleItem` is responsibile for creating new todos.
 

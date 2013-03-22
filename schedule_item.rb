@@ -20,21 +20,24 @@ class ScheduleItem
   # Creates todos for this schedule between the given dates
   # It shouldn't create an additional todos.
   # returns the todos that are between the dates
-  # TODO: remove inspection_structure_id. It is here just for tests.
+  # TODO: remove inspection_structure_id. It is here to simplify tests.
   def todos(beginning_date, ending_date, inspection_structure_id)
     # create an array to hold the todos
     new_todos = []
 
     # TODO: loop through existing todos to see if there are any matches
 
-    # grab latest date (either todo or start_date)
+    # grab latest date (either todo or beginning_date)
     start = beginning_date
 
-    # while the start is not created thatn the end_date
+    # while the start date is less than the ending_date
     while start <= ending_date do
       # grab the next occurance
-      next_date = @schedule.next_date(start,start_date)
+      next_date = @schedule.next_date(start,self.start_date)
+
       puts "next_date = #{next_date}"
+      
+      # only create an todo if it is before ending_date
       if (next_date <= ending_date)
         
         todo = ScheduleTodo.new
@@ -48,7 +51,8 @@ class ScheduleItem
         # add it to the hasMany list for future checking
         @schedule_todos << todo
       end
-      start = next_date
+      # add one day to it
+      start = next_date + 1
     end
 
     new_todos

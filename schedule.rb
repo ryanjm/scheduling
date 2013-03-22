@@ -75,6 +75,7 @@ class Schedule
 
   # Converts @by_day to an nested array
   # The first part is the offset (default = 1) and second is wday number
+  # offset would be used for things like "second Monday of the month" ([2,1])
   # 'mo' => [[1,1]]
   # 'mo,we,fr' => [[1,1],[1,3],[1,5]]
   def translate_by_day
@@ -98,10 +99,20 @@ class Schedule
       days = translate_by_day # i.e. [[1,1]] - 
       # we want the first occurance where wday <= given day
       # example: schedule is [:mo,:we,:fr]
-      # if our start_date is Sunday (wday=0), we want to stop on Monday
-      # if our start_date is Tuesday (wday=2), we want to stop on Wednesday
+      # days = [[1,1],[1,3],[1,5]]
+      # if our start_date is Sunday (wday=0), we want to stop on Monday (0 <= 1)
+      # if our start_date is Tuesday (wday=2), we want to stop on Wednesday ( 2 <= 3)
+      # if our start_date is Saturday (wday=6), we want the following Monday
       # TODO: handle the case that start_date is Saturday and we need to go to the next week
       day_index = days.index { |day| wday <= day[1] }
+      # if it is nil, we want the earliest day of the week
+      if day_index.nil?
+        # I'd like to assume they are in order, but is that guaranteed?
+        first_day = days.sort {|x,y| x[1] <=> y[1] }.first
+        day_index = days.index(first_day)
+        # We then need to bump up the start_date a week
+        start_date+=7
+      end
       # day will be the wday of the first matching date
       day = days[day_index][1]
       # we want to return the start_date plus the number of days till the firt match
@@ -110,17 +121,32 @@ class Schedule
   end
 
   # Will return the next due date for the given schedule
-  # Takes into account the frequency and then asks first_date with new date
+  # Takes into account the frequency and then asks first_date for new date date
   def next_date(start_date,after_date)
     # TODO: needs to actually account for the day of the week it _should_ be on.
-    
+  
+    # Frist time the event happened
+    first_occurrence =  first_date(start_date)
+    # Offset to add to the first_occurrence
+    period = 0
+
+    # period = days between repeated events
     if @freq == :weekly
-      # Given the `date`
+      period = 7.0 * self.interval
+    else
+      nil
     end
+
+    # diff = days between our `after_date` and the `first_occurrence`
+    diff = after_date - first_occurrence
+    diff = 0 if diff < 0
+    # ( diff / period ) - we want to find how many `period`s happened during that `diff`
+    # _.floor - we want to round down
+    # _ * period - multiply by that period to get the right offset
+    # _ = days on or after which our next occurance is
+    days_after = ( diff / period ).floor * period
     
-    # dumb and wrong
-    start_date + frequency_length
-    
+    first_date( first_occurrence + days_after )
   end
   # be able to grab the next x occurances after a given time
 end
