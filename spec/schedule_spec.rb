@@ -1,4 +1,4 @@
-require './schedule.rb'
+require './spec/spec_helper.rb'
 # should be able to ask when the next occurance of that scheudle is, after a given date
 # given ScheduleItems, should be able to find if a scheduleItem is already created for an occurance (and structure) 
 
@@ -100,13 +100,62 @@ describe Schedule do
     end
   end
 
-  describe "#next_date(start_date, after_date)" do
+  describe "#first_group", wip: true do
     before(:each) do
       params = {
-        name: "Every other Monday",
+        name: "Every other Monday, Wednesday, Friday",
         freq: "weekly",
         interval: "2",
-        days_of_week: ["Mo"],
+        days_of_week: ["Mo", "We", "Fr"],
+        duration: "1"
+      }
+      @s = Schedule.new
+      @s.create(params)
+    end
+
+    it "returns the first group for date" do
+      start_date = Date.new(2013,3,5) # First Tuesday in March
+      first_group = Date.new(2013,3,4) # First Sunday
+      @s.first_group(start_date).should eq(first_group)
+    end
+    
+  end
+
+  describe "#next_group" do
+    before(:each) do
+      params = {
+        name: "Every other Monday, Wednesday, Friday",
+        freq: "weekly",
+        interval: "2",
+        days_of_week: ["Mo", "We", "Fr"],
+        duration: "1"
+      }
+      @s = Schedule.new
+      @s.create(params)
+    end
+
+    it "returns the first group if date is before start" do
+      first_occurance = Date.new(2013,3,4) # First Monday in March
+      start_search = Date.new(2013,3,3) # First Sunday
+      @s.next_group(first_occurance,start_search).should eq(first_occurance)
+    end
+
+    it "returns the next group if date is after last event in week" do
+      first_occurance = Date.new(2013,3,4) # First Monday in March
+      start_search = Date.new(2013,3,10) # Saturday
+      next_group = Date.new(2013,3,18) 
+      @s.next_group(first_occurance,start_search).should eq(next_group)
+    end
+
+  end
+
+  describe "#next_date", wip: true do
+    before(:each) do
+      params = {
+        name: "Every other Monday, Wednesday, Friday",
+        freq: "weekly",
+        interval: "2",
+        days_of_week: ["Mo", "We", "Fr"],
         duration: "1"
       }
       @s = Schedule.new
@@ -137,52 +186,70 @@ describe Schedule do
 
     it "returns next occurance even if it is over a week away" do
       # Start of the month - first instance should be Monday the 4th
-      start_date = Date.new(2013,3,1)
-      # Start the search right after the first instance
-      after_date = Date.new(2013,3,5)
+      start_date = Date.new(2013,3,2)
+      # Start the search right after the first group (Saturday)
+      after_date = Date.new(2013,3,9)
       # Should get the next instance, 2 weeks after the 4th
       expected = Date.new(2013,3,18)
 
       @s.next_date(start_date, after_date).should eq(expected)
     end
+    
+    it "returns next occurance even if it starts on a weird day" do
+      # Start of the month - first instance is Friday the 1st
+      start_date = Date.new(2013,3,1)
+      # Start the search right after the first group (Saturday)
+      after_date = Date.new(2013,3,2)
+      # Should get the next instance, 2 weeks after the 4th
+      expected = Date.new(2013,3,11)
 
+      @s.next_date(start_date, after_date).should eq(expected)
+    end
   end
 
-  describe "#first_date" do
-    before(:each) do
-      params = {
-        name: "Every other Monday",
-        freq: "weekly",
-        interval: "2",
-        days_of_week: ["Mo"],
-        duration: "1"
-      }
-      @s = Schedule.new
-      @s.create(params)
-    end
+  describe "#next_occurrence" do
+    context "basic purpose" do
+      before(:each) do
+        params = {
+          name: "Every other Monday",
+          freq: "weekly",
+          interval: "2",
+          days_of_week: ["Mo"],
+          duration: "1"
+        }
+        @s = Schedule.new
+        @s.create(params)
+      end
 
-    it "returns the first occurance of an event given a date" do
-      # where to start the search (March 10th is a Sunday)
-      start_date = Date.new(2013,3,10)
-      # what it is expecting (first Monday after the 10th)
-      first_instance = Date.new(2013,3,11)
+      it "returns the first occurrence of an event given a date" do
+        # where to start the search (March 10th is a Sunday)
+        start_date = Date.new(2013,3,10)
+        # what it is expecting (first Monday after the 10th)
+        first_instance = Date.new(2013,3,11)
 
-      @s.first_date(start_date).should eq(first_instance)
-    end
+        @s.next_occurrence(start_date).should eq(first_instance)
+      end
 
-    it "returns the given date if it is a valid first occurance" do
-      first_instance = Date.new(2013,3,11)
+      it "returns the given date if it is a valid first occurance" do
+        first_instance = Date.new(2013,3,11)
 
-      @s.first_date(first_instance).should eq(first_instance)
-    end
+        @s.next_occurrence(first_instance).should eq(first_instance)
+      end
 
-    it "returns the first occurance, even it if it the following week" do
-      # Tuesday
-      start_date = Date.new(2013,3,5)
-      # the following Monday
-      first_instance = Date.new(2013,3,11)
+      it "returns the first occurrence, even it if it the following week" do
+        # Tuesday
+        start_date = Date.new(2013,3,5)
+        # the following Monday
+        first_instance = Date.new(2013,3,11)
 
-      @s.first_date(start_date).should eq(first_instance)
+        # the true condition is for it to check the following week
+        @s.next_occurrence(start_date, true).should eq(first_instance)
+      end
+
+      it "returns nil if it runs out of days to check" do
+        start_date = Date.new(2013,3,5)
+        @s.next_occurrence(start_date).should eq(nil)
+      end
     end
   end
 
@@ -201,6 +268,35 @@ describe Schedule do
       s = Schedule.new
       s.by_day = '1mo,-2we' # no an option, but handles two cases
       s.translate_by_day.should eq([[1,1],[-2,3]])
+    end
+  end
+
+  describe "#first_day" do
+    context "freq=:weekly" do
+      it "should return first day of the week" do
+        params = {
+          name: "Mo, We, Fr",
+          freq: "weekly",
+          interval: "1",
+          days_of_week: ["We","Mo","Fr"],
+          duration: "1"
+        }
+        s = Schedule.new
+        s.create(params)
+        s.first_day.should eq(1)
+      end
+      it "should return first day of the week" do
+        params = {
+          name: "We, Fr",
+          freq: "weekly",
+          interval: "1",
+          days_of_week: ["We","Fr"],
+          duration: "1"
+        }
+        s = Schedule.new
+        s.create(params)
+        s.first_day.should eq(0)
+      end
     end
   end
 end

@@ -4,9 +4,6 @@
 # It is HIGHLY suggested to read through the entire section before reading this code. By sticking closely to the ICS format, we should be able to easily expand out the options if we want to handle more cases.
 #
 # duration - ics assumes start/end dates to figure out how long an event should be and how to repeat it. I'm changing it a little by having a duration in days. My approach is for the schedule to define when something is DUE, and then duration should be how many days the inspector has to do it. I think the due date is more important then when it should be started.
-#
-# TODO: figure out the form elements that the user will use
-# TODO: have a `create` method to use that user hash (as if from a form) to populate fields
  
 class Schedule
 
@@ -18,7 +15,7 @@ class Schedule
   attr_accessor :by_month_day # integer representing day in month
   attr_accessor :by_week_no # integer representing week in year
   attr_accessor :by_month # integer representing mo in year
-  attr_accessor :wkst # defines when the week starts (defaults to Monday)
+  attr_accessor :wkst # defines when the week starts (defaults to Monday) - can't currently change
   attr_accessor :duration # breaking from ics a little here (see above)
 
   # set the defaults
@@ -95,9 +92,18 @@ class Schedule
     end
   end
 
+  # for :weekly - returns index of first day in translate_by_day
+  def first_day
+    if @freq == :weekly
+      days = translate_by_day
+      first_day = days.sort {|x,y| x[1] <=> y[1] }.first
+      days.index(first_day)
+    end
+  end
+
   # Will return the _first_ time this event should happen
   # Does not take into account the interval
-  def first_date(start_date, continue=false)
+  def next_occurrence(start_date, continue=false)
     puts "  first_date(#{start_date})"
     if @freq == :weekly
       wday = start_date.wday
@@ -114,8 +120,7 @@ class Schedule
       # if it is nil, we want the earliest day of the week
       if continue && day_index.nil?
         # I'd like to assume they are in order, but is that guaranteed?
-        first_day = days.sort {|x,y| x[1] <=> y[1] }.first
-        day_index = days.index(first_day)
+        day_index = first_day
         # We then need to bump up the start_date a week
         start_date+=7
       elsif day_index.nil?
@@ -129,14 +134,19 @@ class Schedule
     end
   end
 
-  # Will return the next due date for the given schedule
-  # Takes into account the frequency and then asks first_date for new date date
-  def next_date(start_date,after_date)
-    puts "\nnext_date(#{start_date},#{after_date})"
-    # TODO: needs to actually account for the day of the week it _should_ be on.
-  
-    # Frist time the event happened
-    first_occurrence =  first_date(start_date,true)
+  # Returns the first day for the frequency
+  def first_group(start_date)
+    if @freq == :weekly
+      day_index = first_day
+      day = translate_by_day[day_index][1]
+      start_date + (day - start_date.wday)
+    end
+  end
+
+  # Returns the first date, for a grouping of events
+  # i.e. if a schedule is MWF, then it will return the Monday
+  # if it is every other week then it will return the following Monday that matches
+  def next_group(first_occurrence,after_date)
     # Offset to add to the first_occurrence
     period = 0
 
@@ -156,7 +166,40 @@ class Schedule
     # _ = days on or after which our next occurance is
     days_after = ( diff / period ).ceil * period
     puts "days_after = ( #{diff} / #{period} ).ceil * #{period} = #{days_after}"
-    first_date( first_occurrence + days_after, false)
+    first_occurrence + days_after
   end
+
+  def next_date(start_date, after_date)
+    first_occurrence = next_occurrence(start_date,true)
+
+    if after_date < first_occurrence
+      first_occurrence
+    elsif n = next_occurrence(after_date)
+      n
+    else
+      # Find the first group for this event happened
+      first_group = first_group(first_occurrence)
+      next_date(start_date, next_group(first_group, after_date))
+    end
+
+    # Find the first grouping based on after_date
+    # call first_date
+    # return unless nil
+    # otherwise find next grouping (then call next_date)
+  end
+
+  # Example:
+  # MWF weekly schedule, starts on March 3 (Sunday)
+  # pass in March 3rd
+  # first_date(starts_date) -> March 4th
+  # next_group -> March 4th
+  # first_date(March 4th) -> March 4th
+  # ---
+  # pass in March 10 (next Sunday)
+  # first_date(starts_date) -> March 4th
+  # next_group -> March 11
+  # first_date(Mar 11) -> Mar 11
+
+
   # be able to grab the next x occurances after a given time
 end
