@@ -100,7 +100,7 @@ describe Schedule do
     end
   end
 
-  describe "#first_group", wip: true do
+  describe "#first_group" do
     before(:each) do
       params = {
         name: "Every other Monday, Wednesday, Friday",
@@ -149,7 +149,7 @@ describe Schedule do
 
   end
 
-  describe "#next_date", wip: true do
+  describe "#next_date" do
     before(:each) do
       params = {
         name: "Every other Monday, Wednesday, Friday",

@@ -75,8 +75,7 @@ describe ScheduleItem do
       it "creates todos between two dates" do
         start_date = Date.new(2013,3,3)
         end_date = Date.new(2013,3,17)
-
-        puts "dates for MWF"
+        
         todos = @schedule_item.todos(start_date,end_date,2)
 
         mo1 = Date.new(2013,3,4)

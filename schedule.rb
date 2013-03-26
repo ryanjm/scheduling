@@ -104,18 +104,17 @@ class Schedule
   # Will return the _first_ time this event should happen
   # Does not take into account the interval
   def next_occurrence(start_date, continue=false)
-    puts "  first_date(#{start_date})"
+    # puts "  first_date(#{start_date})"
     if @freq == :weekly
       wday = start_date.wday
       days = translate_by_day # i.e. [[1,1]] - 
-      puts "    wday(#{wday}) days(#{days})"
+      # puts "    wday(#{wday}) days(#{days})"
       # we want the first occurance where wday <= given day
       # example: schedule is [:mo,:we,:fr]
       # days = [[1,1],[1,3],[1,5]]
       # if our start_date is Sunday (wday=0), we want to stop on Monday (0 <= 1)
       # if our start_date is Tuesday (wday=2), we want to stop on Wednesday ( 2 <= 3)
       # if our start_date is Saturday (wday=6), we want the following Monday
-      # TODO: handle the case that start_date is Saturday and we need to go to the next week
       day_index = days.index { |day| wday <= day[1] }
       # if it is nil, we want the earliest day of the week
       if continue && day_index.nil?
@@ -129,7 +128,7 @@ class Schedule
       # day will be the wday of the first matching date
       day = days[day_index][1]
       # we want to return the start_date plus the number of days till the firt match
-      puts "    #{start_date} + (#{day} - #{wday}) = #{start_date + (day - wday)}"
+      # puts "    #{start_date} + (#{day} - #{wday}) = #{start_date + (day - wday)}"
       start_date + (day - wday)
     end
   end
@@ -165,41 +164,30 @@ class Schedule
     # _ * period - multiply by that period to get the right offset
     # _ = days on or after which our next occurance is
     days_after = ( diff / period ).ceil * period
-    puts "days_after = ( #{diff} / #{period} ).ceil * #{period} = #{days_after}"
+    # puts "days_after = ( #{diff} / #{period} ).ceil * #{period} = #{days_after}"
     first_occurrence + days_after
   end
 
+  # Finds the next occurance of the schedule as long as it is between the two dates
+  # TODO: Possible refactoring, pass in first_occurance, not start_date
   def next_date(start_date, after_date)
+    # puts "\\nnext_date - start(#{start_date}) end(#{after_date})"
     first_occurrence = next_occurrence(start_date,true)
+    # puts "  the first occurance is: #{first_occurrence}"
 
     if after_date < first_occurrence
+      # puts "  return the first_occurrence"
       first_occurrence
     elsif n = next_occurrence(after_date)
+      # puts "  next_occurance is #{n}"
       n
     else
       # Find the first group for this event happened
       first_group = first_group(first_occurrence)
+      # puts "  found first group (#{first_group}) now calling recursively"
       next_date(start_date, next_group(first_group, after_date))
     end
-
-    # Find the first grouping based on after_date
-    # call first_date
-    # return unless nil
-    # otherwise find next grouping (then call next_date)
   end
-
-  # Example:
-  # MWF weekly schedule, starts on March 3 (Sunday)
-  # pass in March 3rd
-  # first_date(starts_date) -> March 4th
-  # next_group -> March 4th
-  # first_date(March 4th) -> March 4th
-  # ---
-  # pass in March 10 (next Sunday)
-  # first_date(starts_date) -> March 4th
-  # next_group -> March 11
-  # first_date(Mar 11) -> Mar 11
-
 
   # be able to grab the next x occurances after a given time
 end
