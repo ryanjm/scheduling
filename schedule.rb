@@ -13,8 +13,8 @@ class Schedule
   attr_accessor :interval # how often to repeat (positive value, default = 1)
   attr_accessor :by_day # list of days, with possible value in front
   attr_accessor :by_month_day # integer representing day in month
-  attr_accessor :by_week_no # integer representing week in year
-  attr_accessor :by_month # integer representing mo in year
+  # attr_accessor :by_week_no # integer representing week in year
+  # attr_accessor :by_month # integer representing mo in year
   attr_accessor :wkst # defines when the week starts (defaults to Monday) - can't currently change
   attr_accessor :duration # breaking from ics a little here (see above)
 
@@ -26,18 +26,70 @@ class Schedule
     @duration = 0 # 1 day
   end
 
-  FREQ = [:daily, :weekly, :monthly]
+  FREQ = [:weekly, :monthly]
   DAYS = [:su, :mo, :tu, :we, :th, :fr, :sa]
 
-  def convert_by_day(days_of_week)
+  def convert_by_day(days_of_week, offset = '')
     selected_days = days_of_week.map do |day|
       d = day.downcase.to_sym
-      DAYS.include?(d) ? d.to_s : nil
+      DAYS.include?(d) ? (offset + d.to_s) : nil
     end
     selected_days.compact.join(",")
   end
 
+  def convert_by_month_day(days_of_month)
+    selected_days = days_of_month.map do |day|
+      day.to_i > 0 ? day : nil
+    end
+    selected_days.compact.join(",")
+  end
+
+  # Returns the date that satisfies the offset and wday
+  # used for "first Monday of the month" or "last Monday of the month"
+  # offset has to be > 0
+  # TODO: isn't dependent on Schedule. Might be better as apart of the date object
+  def day_of_month(year,month,offset,wday)
+    first = Date.new(year,month) # first day of month
+    last = Date.new(year,month).next_month - 1 # grab the last day
+    if offset > 0
+      # offset to get to the right wday
+      wday_offset = wday - first.wday
+      # if the start of the week is actually greater, then add 7 to to first instance
+      wday_offset += 7 if wday_offset < 0
+      # which instance are we looking for?
+      week_offset = 7 * (offset-1)
+      answer = first + wday_offset + week_offset
+      # [last, answer].min
+      if answer.month == month
+        answer
+      else
+        day_of_month(year,month,-1,wday)
+      end
+    else
+      # offset to get to the right wday
+      wday_offset = wday - last.wday
+      # if the offset is positive, we want to make it negative
+      wday_offset -= 7 if wday_offset > 0
+      # which instance are we looking for?
+      week_offset = 7 * (offset+1)
+      answer = last + wday_offset + week_offset
+      # [first, answer].max
+      if answer.month == month
+        answer
+      else
+        day_of_month(year,month,1,wday)
+      end
+    end
+  end
+
   # Take params from a form and build the needed attributes
+  # Possible attributes:
+  # name - name for schedule
+  # freq - type of schedule, "weekly" or "monthly"
+  # interval - how often the frequency should repeat
+  # days_of_week - array of days the schedule gets applys to (ie ["Mo","We"])
+  # days_of_week_offset - how to offset the days of the week, just a single number
+  # duration - how long someone has to complete the task (0 = due same day)
   def create(params)
     @name = params[:name] if params[:name]
 
@@ -47,7 +99,15 @@ class Schedule
 
     @interval = params[:interval].to_i if params[:interval]
 
-    @by_day = convert_by_day(params[:days_of_week]) if params[:days_of_week]
+    if params[:days_of_week] && params[:days_of_week_offset]
+      @by_day = convert_by_day(params[:days_of_week], params[:days_of_week_offset])
+    elsif params[:days_of_week]
+      @by_day = convert_by_day(params[:days_of_week])
+    end
+
+    if params[:days_of_month]
+      @by_month_day = convert_by_month_day(params[:days_of_month])
+    end
 
     @duration = params[:duration].to_i if params[:duration]
   end
@@ -63,14 +123,14 @@ class Schedule
     end
   end
 
-  # TODO: needs to know the month it is looking at
+  # simply used for validation - we'll keep the monthly simple for now
   def frequency_length
     if @freq == :daily
       @interval * 1
     elsif @freq == :weekly
       @interval * 7
     elsif @frequency == :monthly
-      @interval * 29 # TODO: this number needs to be more accurate
+      @interval * 29 # technically this is short, but I think it is fine for now
     end
   end
 
@@ -101,14 +161,14 @@ class Schedule
     end
   end
 
-  # Will return the _first_ time this event should happen
-  # Does not take into account the interval
+  # Will return the _first_ time this event should happen after a given date
+  # `continue` option is if it should look into the following freq or not (ie look at the next week).
+  #     Otherwise it returns nil.
+  # Does not take into account the interval.
   def next_occurrence(start_date, continue=false)
-    # puts "  first_date(#{start_date})"
     if @freq == :weekly
       wday = start_date.wday
       days = translate_by_day # i.e. [[1,1]] - 
-      # puts "    wday(#{wday}) days(#{days})"
       # we want the first occurance where wday <= given day
       # example: schedule is [:mo,:we,:fr]
       # days = [[1,1],[1,3],[1,5]]
@@ -128,8 +188,17 @@ class Schedule
       # day will be the wday of the first matching date
       day = days[day_index][1]
       # we want to return the start_date plus the number of days till the firt match
-      # puts "    #{start_date} + (#{day} - #{wday}) = #{start_date + (day - wday)}"
       start_date + (day - wday)
+    elsif @freq == :monthly && @by_day
+      # very similar to :weekly
+      wday = start_date.mday
+
+      days = translate_by_day
+
+      # goal: add the offset of days
+      # start_date + _
+    elsif @freq == :monthly && @by_month_day
+      
     end
   end
 

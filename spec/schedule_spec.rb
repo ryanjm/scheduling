@@ -20,10 +20,15 @@ describe Schedule do
       r = @schedule.convert_by_day(days)
       r.should eq('mo,we')
     end
+    it "should handle an offset" do
+      days = ["Mo","We"]
+      r = @schedule.convert_by_day(days,'2')
+      r.should eq('2mo,2we')
+    end
   end
 
   describe "#create" do
-    it "takes simple hash of arguments" do
+    it "takes simple hash of arguments for weekly" do
       params = {
         name: "Every other Monday",
         freq: "weekly",
@@ -38,6 +43,57 @@ describe Schedule do
       s.interval.should eq(2)
       s.by_day.should eq('mo')
       s.duration.should eq(1) 
+    end
+    it "takes a hash for a monthly schedule" do
+      params = {
+        name: "2nd Monday each month",
+        freq: "monthly",
+        interval: "1",
+        days_of_week: ["Mo"],
+        days_of_week_offset: "2",
+        duration: "0"
+      }
+      s = Schedule.new
+      s.create(params)
+      s.name.should eq("2nd Monday each month")
+      s.freq.should eq(:monthly)
+      s.interval.should eq(1)
+      s.by_day.should eq('2mo')
+      s.duration.should eq(0) 
+    end
+    it "takes a hash for a complex monthly schedule" do
+      params = {
+        name: "2nd Monday each month",
+        freq: "monthly",
+        interval: "1",
+        days_of_week: ["Mo","We"],
+        days_of_week_offset: "2",
+        duration: "0"
+      }
+      s = Schedule.new
+      s.create(params)
+      s.name.should eq("2nd Monday each month")
+      s.freq.should eq(:monthly)
+      s.interval.should eq(1)
+      s.by_day.should eq('2mo,2we')
+      s.duration.should eq(0) 
+    end
+    it "takes a hash for days of month schedule" do
+      params = {
+        name: "2nd Monday each month",
+        freq: "monthly",
+        interval: "1",
+        days_of_month: ["2"],
+        duration: "0"
+      }
+      s = Schedule.new
+      s.create(params)
+      s.name.should eq("2nd Monday each month")
+      s.freq.should eq(:monthly)
+      s.interval.should eq(1)
+      s.by_day.should eq(nil)
+      s.by_month_day.should eq('2')
+      s.duration.should eq(0) 
     end
   end
 
@@ -251,6 +307,27 @@ describe Schedule do
         @s.next_occurrence(start_date).should eq(nil)
       end
     end
+    context "monthly schedule", wip: true do
+      before :each do
+        params = {
+          name: "First Monday of the Month",
+          freq: "monthly",
+          interval: "1",
+          days_of_week: ["Mo"],
+          days_of_week_offset: "1",
+          duration: "0"
+        }
+        @s = Schedule.new
+        @s.create(params)
+      end
+      
+      it "returns the first occurance for monthly schedules" do
+        start_date = Date.new(2013,3,2) # Saturday
+        first_instance = Date.new(2013,3,4) # Monday
+
+        @s.next_occurrence(start_date).should eq(first_instance)
+      end
+    end
   end
 
   describe "#translate_by_day" do
@@ -297,6 +374,37 @@ describe Schedule do
         s.create(params)
         s.first_day.should eq(0)
       end
+    end
+  end
+
+  describe "#day_of_month", wip: true do
+    it "should return first day of the month" do
+      s = Schedule.new
+      s.day_of_month(2013,3,1,5).should eq(Date.new(2013,3,1))
+    end
+    it "should return first Monday of the month" do
+      s = Schedule.new
+      s.day_of_month(2013,3,1,1).should eq(Date.new(2013,3,4))
+    end
+    it "should return first Saturday of the month" do
+      s = Schedule.new
+      s.day_of_month(2013,3,1,6).should eq(Date.new(2013,3,2))
+    end
+    it "should return second Monday of the month" do
+      s = Schedule.new
+      s.day_of_month(2013,3,2,1).should eq(Date.new(2013,3,11))
+    end
+    it "should return last Monday of the month" do
+      s = Schedule.new
+      s.day_of_month(2013,3,-1,1).should eq(Date.new(2013,3,25))
+    end
+    it "should return last day of the month" do
+      s = Schedule.new
+      s.day_of_month(2013,3,-1,0).should eq(Date.new(2013,3,31))
+    end
+    it "should return last instance of day if offset is too large" do
+      s = Schedule.new
+      s.day_of_month(2013,3,5,1).should eq(Date.new(2013,3,25))
     end
   end
 end

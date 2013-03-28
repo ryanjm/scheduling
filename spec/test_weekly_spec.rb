@@ -17,7 +17,7 @@ require './spec/spec_helper.rb'
 # 21 22 23 24 25 26 27
 # 28 29 30
 
-describe "Weekly Schedules", wip: true do
+describe "Weekly Schedules" do
   context "Weekly" do
     it "should handle every Monday" do
       test_schedule({
