@@ -31,7 +31,7 @@ describe "Weekly Schedules" do
         end_search: Date.new(2013,3,25)
       },{
         start_dates: [[3,11],[3,18],[3,25]],
-        end_dates: [[3,11],[3,18],[3,25]],
+        end_dates: [[3,11],[3,18],[3,25]]
       })
     end
 
@@ -47,7 +47,7 @@ describe "Weekly Schedules" do
         end_search: Date.new(2013,3,25)
       },{
         start_dates: [[3,6],[3,13],[3,20]],
-        end_dates: [[3,7],[3,14],[3,21]],
+        end_dates: [[3,7],[3,14],[3,21]]
       })
     end
 

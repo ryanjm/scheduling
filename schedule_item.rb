@@ -37,6 +37,7 @@ class ScheduleItem
     # while the start date is less than the ending_date
     while start <= ending_date do
       # grab the next occurance
+      # puts "todos - finding the next_date(#{self.start_date},#{start})"
       next_date = @schedule.next_date(self.start_date,start)
 
       # only create an todo if it is before ending_date

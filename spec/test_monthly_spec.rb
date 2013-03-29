@@ -16,21 +16,54 @@ require './spec/spec_helper.rb'
 # 21 22 23 24 25 26 27
 # 28 29 30
 
-describe "Monthly Schedules" do
+describe "Monthly Schedules", wip: true do
   context "Monthly" do
     it "should handle first Monday of the month" do
       test_schedule({
         freq: 'monthly',
         interval: '1',
-        days_of_month: ['1','Mo'],
+        days_of_week: ['Mo'],
+        days_of_week_offset: "1",
         duration: '0'
       },{
         start_schedule: Date.new(2013,3,1),
-        start_search: Date.new(2013,3,5),
-        end_search: Date.new(2013,3,25)
+        start_search: Date.new(2013,3,1),
+        end_search: Date.new(2013,3,31)
       },{
-        start_dates: [[3,11],[3,18],[3,25]],
-        end_dates: [[3,11],[3,18],[3,25]],
+        start_dates: [[3,4]],
+        end_dates: [[3,4]]
+      })
+    end
+    it "should handle second Monday of the month" do
+      test_schedule({
+        freq: 'monthly',
+        interval: '1',
+        days_of_week: ['Mo'],
+        days_of_week_offset: "2",
+        duration: '0'
+      },{
+        start_schedule: Date.new(2013,3,1),
+        start_search: Date.new(2013,3,1),
+        end_search: Date.new(2013,5,31)
+      },{
+        start_dates: [[3,11],[4,8],[5,13]],
+        end_dates: [[3,11],[4,8],[5,13]]
+      })
+    end
+    it "should handle last Monday of the month" do
+      test_schedule({
+        freq: 'monthly',
+        interval: '1',
+        days_of_week: ['Mo'],
+        days_of_week_offset: "-1",
+        duration: '0'
+      },{
+        start_schedule: Date.new(2013,3,1),
+        start_search: Date.new(2013,3,1),
+        end_search: Date.new(2013,5,31)
+      },{
+        start_dates: [[3,25],[4,29],[5,27]],
+        end_dates: [[3,25],[4,29],[5,27]]
       })
     end
   end

@@ -154,7 +154,7 @@ class Schedule
 
   # for :weekly - returns index of first day in translate_by_day
   def first_day
-    if @freq == :weekly
+    if @freq == :weekly || (@freq == :monthly && @by_day)
       days = translate_by_day
       first_day = days.sort {|x,y| x[1] <=> y[1] }.first
       days.index(first_day)
@@ -190,24 +190,37 @@ class Schedule
       # we want to return the start_date plus the number of days till the firt match
       start_date + (day - wday)
     elsif @freq == :monthly && @by_day
-      # very similar to :weekly
-      wday = start_date.mday
-
+      # Given the start_date we can grab month/year
+      # go through each of the days and 
+      # return if it is greater than start_date
+      # else ask if it needs to go to the following month (recursion)
       days = translate_by_day
-
-      # goal: add the offset of days
-      # start_date + _
+      days.each do |d|
+        # puts "  looking for #{d}"
+        day_in_month = day_of_month(start_date.year,start_date.month,*d)
+        return day_in_month if day_in_month >= start_date
+      end
+      # if it didn't find a match, then ask if it needs to continue
+      if continue
+        # Call the next month
+        next_month = Date.new(start_date.year,start_date.month+1)
+        self.next_occurrence(next_month, continue)
+      else
+        nil
+      end
     elsif @freq == :monthly && @by_month_day
-      
+      "n/a yet"
     end
   end
 
   # Returns the first day for the frequency
   def first_group(start_date)
     if @freq == :weekly
-      day_index = first_day
-      day = translate_by_day[day_index][1]
-      start_date + (day - start_date.wday)
+      wday = translate_by_day[first_day][1]
+      start_date + (wday - start_date.wday)
+    # elsif @freq == :monthly
+    #   day = translate_by_day[first_day]
+    #   day_of_month(start_date.year,start_date.month,*day)
     end
   end
 
@@ -240,7 +253,7 @@ class Schedule
   # Finds the next occurance of the schedule as long as it is between the two dates
   # TODO: Possible refactoring, pass in first_occurance, not start_date
   def next_date(start_date, after_date)
-    # puts "\\nnext_date - start(#{start_date}) end(#{after_date})"
+    # puts "\\nnext_date - start(#{start_date}) after(#{after_date})"
     first_occurrence = next_occurrence(start_date,true)
     # puts "  the first occurance is: #{first_occurrence}"
 
@@ -248,8 +261,11 @@ class Schedule
       # puts "  return the first_occurrence"
       first_occurrence
     elsif n = next_occurrence(after_date)
-      # puts "  next_occurance is #{n}"
       n
+    # I don't like having this type of conditional here, but 
+    # `first_group` and `next_group` don't make sense for :monthly
+    elsif @freq == :monthly
+      next_occurrence(after_date,true)
     else
       # Find the first group for this event happened
       first_group = first_group(first_occurrence)
