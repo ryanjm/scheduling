@@ -64,3 +64,12 @@ This is probably the most complicating part. There are two parts to it.
 The `#next_date` method will then use that first date to find the next. It will first look to see if there are any adjacent days matching (such as a schedule that is "Mo, We, Fr"). If there are not, then it will use the `#frequency_length` to find how many days away the next instance is. For example, given a schedule that is "Every other Monday" and we know our first date is a Monday, we just need to add 14 days to it to find the next occurrance of the schedule.
 
 Since we are only concered about one date at a time, we can continually pass the date back through the `#next_date` method in order to find the next occurrence.
+
+## Adding New Schedules
+
+This has been my process for the tests to create in order to make a new schedule:
+
+* Schedule#create - need to be able to pass in params in order to create a schedule
+* Schedule#next_occurrence - define the first / subsequent occurances
+* Schedule#next_date - the basis for figuring out the next date
+

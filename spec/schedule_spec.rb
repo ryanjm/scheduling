@@ -95,6 +95,23 @@ describe Schedule do
       s.by_month_day.should eq('2')
       s.duration.should eq(0) 
     end
+    it "takes a hash for multiple days of month schedule" do
+      params = {
+        name: "2nd Monday each month",
+        freq: "monthly",
+        interval: "1",
+        days_of_month: ["2","15"],
+        duration: "0"
+      }
+      s = Schedule.new
+      s.create(params)
+      s.name.should eq("2nd Monday each month")
+      s.freq.should eq(:monthly)
+      s.interval.should eq(1)
+      s.by_day.should eq(nil)
+      s.by_month_day.should eq('2,15')
+      s.duration.should eq(0) 
+    end
   end
 
   describe "#valid?" do
@@ -195,7 +212,7 @@ describe Schedule do
     #     @s.first_group(start_date).should eq(first_group)
     #   end
     # end
-    
+
   end
 
   describe "#next_group" do
@@ -302,7 +319,7 @@ describe Schedule do
 
         @s.next_date(start_date, after_date).should eq(expected)
       end
-      
+
       it "returns next occurance even if it starts on a weird day" do
         # Start of the month - first instance is Friday the 1st
         start_date = Date.new(2013,3,1)
@@ -313,10 +330,10 @@ describe Schedule do
 
         @s.next_date(start_date, after_date).should eq(expected)
       end
-      
+
     end
 
-   context "monthly" do
+    context "monthly week day schedule" do
       before(:each) do
         params = {
           name: "First Monday of the Month",
@@ -351,9 +368,45 @@ describe Schedule do
 
         @s.next_date(start_date,next_date).should eq(next_date)
       end
-      
+
     end
 
+    context "monthly day schedule" do
+      before :each do
+        params = {
+          name: "1st and 15th of the Month",
+          freq: "monthly",
+          interval: "1",
+          days_of_month: ["1","15"],
+          duration: "0"
+        }
+        @s = Schedule.new
+        @s.create(params)
+      end 
+
+      it "returns next event if the start_date and after_date is before the first event" do
+        # where the schedule originally starts (Sunday)
+        start_date = Date.new(2013,2,20)
+        # what it is expecting (first Monday after the 10th)
+        first_instance = Date.new(2013,3,1)
+        @s.next_date(start_date,start_date).should eq(first_instance)
+      end
+
+      it "returns date if it is a valid starting date" do
+        # where to start the search (Monday)
+        start_date = Date.new(2013,3,15)
+        @s.next_date(start_date,start_date).should eq(start_date)
+      end
+
+      it "returns date if it is the next occurance" do
+        # where to start the search (Saturday)
+        start_date = Date.new(2013,3,2)
+        next_date = Date.new(2013,3,15)
+
+        @s.next_date(start_date,next_date).should eq(next_date)
+      end
+
+    end
 
   end
 
@@ -401,7 +454,7 @@ describe Schedule do
         @s.next_occurrence(start_date).should eq(nil)
       end
     end
-    context "monthly schedule" do
+    context "monthly weekday schedule" do
       before :each do
         params = {
           name: "First Monday of the Month",
@@ -414,14 +467,14 @@ describe Schedule do
         @s = Schedule.new
         @s.create(params)
       end
-      
+
       it "returns the first occurance for monthly schedules" do
         start_date = Date.new(2013,3,2) # Saturday
         first_instance = Date.new(2013,3,4) # Monday
 
         @s.next_occurrence(start_date).should eq(first_instance)
       end
-      it "returns the first occurance for monthly schedules - starting on the first", wip: true do
+      it "returns the first occurance for monthly schedules - starting on the first" do
         start_date = Date.new(2013,3,1) # Friday
         first_instance = Date.new(2013,3,4) # Monday
 
@@ -437,6 +490,33 @@ describe Schedule do
         start_date = Date.new(2013,3,5) # Tuesday
 
         @s.next_occurrence(start_date).should eq(nil)
+      end
+    end
+    context "monthly day schedule" do
+      before :each do
+        params = {
+          name: "1st and 15th of the Month",
+          freq: "monthly",
+          interval: "1",
+          days_of_month: ["1","15"],
+          duration: "0"
+        }
+        @s = Schedule.new
+        @s.create(params)
+      end      
+      it "returns the first occurance for a monthly day schedule" do
+        start_date = Date.new(2013,3,1)
+        @s.next_occurrence(start_date).should eq(start_date)
+      end
+      it "returns the next occurance for a monthly day schedule" do
+        start_date = Date.new(2013,3,2)
+        first_instance = Date.new(2013,3,15)
+        @s.next_occurrence(start_date).should eq(first_instance)
+      end
+      it "returns the next occurance for the next month schedule" do
+        start_date = Date.new(2013,3,16)
+        first_instance = Date.new(2013,4,1)
+        @s.next_occurrence(start_date,true).should eq(first_instance)
       end
     end
   end

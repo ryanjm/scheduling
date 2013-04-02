@@ -16,8 +16,8 @@ require './spec/spec_helper.rb'
 # 21 22 23 24 25 26 27
 # 28 29 30
 
-describe "Monthly Schedules", wip: true do
-  context "Monthly" do
+describe "Monthly Schedules" do
+  context "Monthly - week days" do
     it "should handle first Monday of the month" do
       test_schedule({
         freq: 'monthly',
@@ -64,6 +64,25 @@ describe "Monthly Schedules", wip: true do
       },{
         start_dates: [[3,25],[4,29],[5,27]],
         end_dates: [[3,25],[4,29],[5,27]]
+      })
+    end
+  end
+
+  context "Monthly - month days" do
+    it "should handle 1st and 15th" do
+      test_schedule({
+        name: "1st and 15th of the Month",
+        freq: "monthly",
+        interval: "1",
+        days_of_month: ["1","15"],
+        duration: "0"
+      },{
+        start_schedule: Date.new(2013,2,20),
+        start_search: Date.new(2013,2,20),
+        end_search: Date.new(2013,5,1)
+      },{
+        start_dates: [[3,1],[3,15],[4,1],[4,15],[5,1]],
+        end_dates: [[3,1],[3,15],[4,1],[4,15],[5,1]]
       })
     end
   end

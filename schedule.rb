@@ -209,7 +209,19 @@ class Schedule
         nil
       end
     elsif @freq == :monthly && @by_month_day
-      "n/a yet"
+      # Given start_date we know the day of month and we loop around 
+      # by_month_day until we find one bigger. If not, retun nil unless continue = true, 
+      # in which case, grab the first one from by_month, and get it from the next month
+      month_days = @by_month_day.split(',').map(&:to_i).sort
+      day_index = month_days.index { |mday| start_date.mday <= mday }
+      if !day_index.nil?
+        day = month_days[day_index]
+        Date.new(start_date.year, start_date.month, day)
+      elsif continue
+        Date.new(start_date.year, start_date.month+1, month_days.first)
+      else
+        nil
+      end
     end
   end
 

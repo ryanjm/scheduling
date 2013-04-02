@@ -82,9 +82,9 @@ describe ScheduleItem do
         we1 = Date.new(2013,3,6)
         fr1 = Date.new(2013,3,8)
 
-        mo1 = Date.new(2013,3,11)
-        we1 = Date.new(2013,3,13)
-        fr1 = Date.new(2013,3,15)
+        mo2 = Date.new(2013,3,11)
+        we2 = Date.new(2013,3,13)
+        fr2 = Date.new(2013,3,15)
 
         todos.length.should eq(6)
         todos[0].start_date.should eq(mo1)
