@@ -39,7 +39,7 @@ class Schedule
 
   def convert_by_month_day(days_of_month)
     selected_days = days_of_month.map do |day|
-      day.to_i > 0 ? day : nil
+      day.to_i != 0 ? day : nil
     end
     selected_days.compact.join(",")
   end
@@ -210,10 +210,19 @@ class Schedule
       end
     elsif @freq == :monthly && @by_month_day
       # Given start_date we know the day of month and we loop around 
-      # by_month_day until we find one bigger. If not, retun nil unless continue = true, 
+      # by_month_day until we find one bigger (unless negative). If not, retun nil unless continue = true, 
       # in which case, grab the first one from by_month, and get it from the next month
+      start_days_in_month = days_in_month(start_date.month, start_date.year)
+      neg_start = start_date.mday - start_days_in_month
       month_days = @by_month_day.split(',').map(&:to_i).sort
-      day_index = month_days.index { |mday| start_date.mday <= mday }
+      day_index = month_days.index do |mday| 
+        if mday < 0
+          # handle negatives
+          neg_start <= mday
+        else
+          start_date.mday <= mday
+        end
+      end
       if !day_index.nil?
         day = month_days[day_index]
         Date.new(start_date.year, start_date.month, day)
@@ -223,6 +232,14 @@ class Schedule
         nil
       end
     end
+  end
+
+  # Hack - this is from ActiveSupport - just use that method
+  COMMON_YEAR_DAYS_IN_MONTH = [nil, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+
+  def days_in_month(month, year = Time.now.year)
+     return 29 if month == 2 && Date.gregorian_leap?(year)
+     COMMON_YEAR_DAYS_IN_MONTH[month]
   end
 
   # Returns the first day for the frequency

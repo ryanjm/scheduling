@@ -67,7 +67,7 @@ describe "Monthly Schedules" do
       })
     end
   end
-
+  
   context "Monthly - month days" do
     it "should handle 1st and 15th" do
       test_schedule({
@@ -83,6 +83,22 @@ describe "Monthly Schedules" do
       },{
         start_dates: [[3,1],[3,15],[4,1],[4,15],[5,1]],
         end_dates: [[3,1],[3,15],[4,1],[4,15],[5,1]]
+      })
+    end
+    it "should handle last day of month", wip: true  do
+      test_schedule({
+        name: "Last of month",
+        freq: "monthly",
+        interval: "1",
+        days_of_month: ["-1"],
+        duration: "0"
+      },{
+        start_schedule: Date.new(2013,3,20),
+        start_search: Date.new(2013,3,20),
+        end_search: Date.new(2013,5,1)
+      },{
+        start_dates: [[3,31],[4,30]],
+        end_dates: [[3,31],[4,30]]
       })
     end
   end
